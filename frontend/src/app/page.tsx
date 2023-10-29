@@ -15,6 +15,7 @@ export default function Home() {
       {coverImageArray.map((coverImage) => {
         return <img key={coverImage} src={coverImage} onClick={()=>router.push("/manga?id="+coverImage)}></img>;
       })}
+      <button onClick={()=>router.push('/add_manga')}>Add new Manga</button>
     </main>
   );
 }

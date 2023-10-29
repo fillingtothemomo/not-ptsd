@@ -7,7 +7,6 @@ class Manga(models.Model):
     title = models.CharField(max_length=100)
     author = models.CharField(max_length=100)
     description = models.TextField(null=True)
-    cover_image = models.ImageField(upload_to='manga_covers/', null=True, blank=True)
 
 class Chapter(models.Model):
     manga = models.ForeignKey(Manga, on_delete=models.CASCADE, related_name='chapters')

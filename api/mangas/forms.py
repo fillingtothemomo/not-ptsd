@@ -4,7 +4,7 @@ from .models import Chapter, Manga
 class MangaForm(forms.ModelForm):
     class Meta:
         model = Manga
-        fields = ['title', 'author', 'description', 'cover_image']
+        fields = ['title', 'author', 'description']
 class ChapterForm(forms.ModelForm):
     class Meta:
         model = Chapter

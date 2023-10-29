@@ -4,11 +4,20 @@
     <title>Add New Chapter</title>
 </head>
 <body>
-    <h1>Add New Chapter to {{ manga.title }}</h1>
+    <h1>Add New Chapter</h1>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Add Chapter</button>
+        <input type="text" id="mangaid">Enter Manga ID again</input><br />
+        <input type="text" id="chapterid">Enter Chapter ID</input><br />
+        <button type="submit" onClick={"submit()"}>Add Chapter</button>
     </form>
-</body>
+    <script>
+        function submit() {
+            var mangaid = document.getElementById("mangaid").value;
+            var chapterid = document.getElementById("chapterid").value;
+            var url = "/mangas/convert_image/" + mangaid + "_" + chapterid + "/";
+            redirect(url);
+            
+        }
 </html>

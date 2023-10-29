@@ -1,6 +1,6 @@
 <!-- add_new_manga.html -->
 <form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Add Manga</button>
+  {% csrf_token %} {{ form.as_p }}
+
+  <button type="submit" onClick={window.open("/mangas/add_new_chapter/1")}>Add Manga</button>
 </form>

@@ -8,5 +8,7 @@ urlpatterns = [
     path('convert_manga/<str:id>', convert_manga_pdf, name='convert-manga-chapter'),
     path('send_image/<str:id>/', send_image, name='send-image'),
     path('convert_images_to_base64/<str:id>', convert_images_to_base64, name='convert-images-to-base64'),
+    path('get_base64/<str:id>', get_base64, name='get-base64'),
+    
 
 ]

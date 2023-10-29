@@ -1,9 +1,14 @@
 import base64
 import os
+from django.views.decorators.csrf import csrf_exempt
+from mangas.serializers import ChapterSerializer
 from rest_framework.decorators import api_view
 from django.templatetags.static import static
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, renderer_classes,permission_classes
 
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.conf import settings
@@ -24,7 +29,7 @@ APP_ID = 'Manga-detection'
 # Change these to whatever model and image input you want to use
 MODEL_ID = 'nsfw-recognition'
 MODEL_VERSION_ID = 'aa47919c9a8d4d94bfa283121281bcc4'
-
+@csrf_exempt
 def add_new_manga(request):
     if request.method == 'POST':
         form = MangaForm(request.POST, request.FILES)
@@ -35,7 +40,7 @@ def add_new_manga(request):
         form = MangaForm()
 
     return render(request, 'add_new_manga.html', {'form': form})
-
+@csrf_exempt
 def add_new_chapter(request, manga_id):
     manga = Manga.objects.get(pk=manga_id)
 
@@ -51,19 +56,18 @@ def add_new_chapter(request, manga_id):
                 next_chapter_number = 1
 
             # Save the chapter with the associated manga and chapter number
-            chapter = form.save(commit=False)
-            chapter.manga = manga
-            chapter.chapter_number = next_chapter_number
-            chapter.save()
+            chapter = form.save()
+            # chapter.manga = manga
+            # chapter.chapter_number = next_chapter_number
+            # chapter.save()
 
-            return redirect('manga-detail', pk=manga_id)  # Redirect to the manga detail page
     else:
         form = ChapterForm()
 
     return render(request, 'add_new_chapter.html', {'form': form, 'manga': manga})
 
 
-
+@csrf_exempt
 def convert_manga_pdf(request,id):
     try:
         manga_id, chapter_id = id.split('_')  # Assuming 'mangaId_chapterId' format
@@ -90,7 +94,7 @@ def convert_manga_pdf(request,id):
 
     return render(request, 'convert_result.html', {'Result': Result})
 
-
+@csrf_exempt
 def send_image(request, id):
     try:
         manga_id, chapter_id = id.split('_')  # Assuming 'mangaId_chapterId' format
@@ -142,7 +146,7 @@ def send_image(request, id):
         return JsonResponse({'error': f'Clarifai request failed: {str(e)}'})
 
 
-
+@csrf_exempt
 def convert_images_to_base64(request, id):
     manga_id, chapter_id = id.split('_')  # Assuming 'mangaId_chapterId' format
     manga = Manga.objects.get(pk=manga_id)
@@ -161,3 +165,18 @@ def convert_images_to_base64(request, id):
     chapter.save()
 
     return JsonResponse({'message': 'Images converted to base64 and saved to the database'})
+
+@permission_classes([IsAuthenticated])
+@renderer_classes((TemplateHTMLRenderer, JSONRenderer))
+@csrf_exempt
+def get_base64(request,id):
+    manga_id, chapter_id = id.split('_')
+    # manga = Manga.objects.get(pk=manga_id)
+    # chapter = Chapter.objects.get(pk=chapter_id)
+    chapterbson= Chapter.objects.filter(manga_id=manga_id,chapter_number=chapter_id)
+    print("---------------------")
+    print(chapterbson.values())
+    ser = ChapterSerializer(chapterbson, many=True)
+    print(ser)
+    base64_images = ser.data[0]['base64_images']
+    return JsonResponse({'base64_images': base64_images})
