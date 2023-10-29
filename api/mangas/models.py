@@ -1,6 +1,6 @@
 from django.db import models
 
-def chapter_upload_path(instance):
+def chapter_upload_path(instance,_):
     return f'manga_files/{instance.manga.id}/chapters/{instance.chapter_number}.pdf'
 
 class Manga(models.Model):
