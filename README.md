@@ -1,5 +1,5 @@
 # not-ptsd
-##Clone the repo
+## Clone the repo
 '''
 git clone git@github.com:fillingtothemomo/not-ptsd.git
 '''
