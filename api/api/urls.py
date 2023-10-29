@@ -28,4 +28,5 @@ urlpatterns = [
        path('authentication/', include('users.urls')),
        path('v1/', include(router.urls)),
        path('mangas/',include('mangas.urls')),
+       
 ]

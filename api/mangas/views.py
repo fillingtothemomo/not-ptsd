@@ -1,4 +1,9 @@
+import base64
 import os
+from rest_framework.decorators import api_view
+from django.templatetags.static import static
+from rest_framework.response import Response
+
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.conf import settings
@@ -24,10 +29,11 @@ def add_new_manga(request):
     if request.method == 'POST':
         form = MangaForm(request.POST, request.FILES)
         if form.is_valid():
-            manga = form.save(commit=False) # Save the manga object first
+            manga = form.save() # Save the manga object first
             manga.save()
-            Manga.objects.filter(pk=manga.pk).update(manga_filename=f'manga_files/{manga.id}.pdf')
-            form.save_m2m()
+            
+            os.rename('media/manga_files/None.pdf',f'media/manga_files/{manga.id}.pdf')
+
            
     else:
         form = MangaForm()
@@ -38,7 +44,7 @@ def convert_manga_pdf(request, manga_id):
     try:
         manga = Manga.objects.get(pk=manga_id)
         pdf_file_path =f'media/manga_files/{manga_id}.pdf'
-        output_folder = f'media/manga_images/{manga_id}'  # Create a unique folder for each manga
+        output_folder = f'media/manga_images/{manga_id}'  
 
         os.makedirs(output_folder, exist_ok=True)
         print("hello")
@@ -106,3 +112,22 @@ def send_image(request,manga_id):
 
     except Exception as e:
         return JsonResponse({'error': f'Clarifai request failed: {str(e)}'})
+
+
+
+def convert_images_to_base64(request, manga_id):
+    manga = Manga.objects.get(pk=manga_id)
+    image_dir = f'media/manga_images/{manga_id}/'  # Replace with the actual directory path
+
+    base64_images = []  # Declare the list outside the loop
+
+    for filename in os.listdir(image_dir):
+        if filename.lower().endswith('.jpg'):  # Corrected the file extension check
+            with open(os.path.join(image_dir, filename), 'rb') as image_file:
+                base64_data = base64.b64encode(image_file.read()).decode('utf-8')
+                base64_images.append(base64_data)  # Append each base64 image data
+
+    manga.base64_images = ','.join(base64_images)  # Join the base64 images into a comma-separated string
+    manga.save()
+    
+    return JsonResponse({'message': 'Images converted to base64 and saved to the database'})
