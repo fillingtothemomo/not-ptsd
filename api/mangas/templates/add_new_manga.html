@@ -1,9 +1,6 @@
-
-{% block content %}
-  <h2>Add a New Manga</h2>
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Upload Manga</button>
-  </form>
-{% endblock %}
+<!-- add_new_manga.html -->
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Add Manga</button>
+</form>

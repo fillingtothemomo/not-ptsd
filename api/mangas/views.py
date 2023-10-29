@@ -5,13 +5,13 @@ from django.templatetags.static import static
 from rest_framework.response import Response
 
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage 
 from django.shortcuts import render, redirect
-from .forms import MangaForm  # Import the MangaForm you created
+from .forms import ChapterForm, MangaForm  # Import the MangaForm you created
 from pdf2image import convert_from_path
-from .models import Manga
+from .models import Chapter, Manga
 from clarifai_grpc.channel.clarifai_channel import ClarifaiChannel
 from clarifai_grpc.grpc.api import resources_pb2, service_pb2, service_pb2_grpc
 from clarifai_grpc.grpc.api.status import status_code_pb2
@@ -29,22 +29,49 @@ def add_new_manga(request):
     if request.method == 'POST':
         form = MangaForm(request.POST, request.FILES)
         if form.is_valid():
-            manga = form.save() # Save the manga object first
-            manga.save()
+            form.save()  
             
-            os.rename('media/manga_files/None.pdf',f'media/manga_files/{manga.id}.pdf')
-
-           
     else:
         form = MangaForm()
 
     return render(request, 'add_new_manga.html', {'form': form})
 
-def convert_manga_pdf(request, manga_id):
+def add_new_chapter(request, manga_id):
+    manga = Manga.objects.get(pk=manga_id)
+
+    if request.method == 'POST':
+        form = ChapterForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Calculate the next chapter number based on existing chapters
+            last_chapter = Chapter.objects.filter(manga=manga).order_by('-chapter_number').first()
+
+            if last_chapter:
+                next_chapter_number = last_chapter.chapter_number + 1
+            else:
+                next_chapter_number = 1
+
+            # Save the chapter with the associated manga and chapter number
+            chapter = form.save(commit=False)
+            chapter.manga = manga
+            chapter.chapter_number = next_chapter_number
+            chapter.save()
+
+            return redirect('manga-detail', pk=manga_id)  # Redirect to the manga detail page
+    else:
+        form = ChapterForm()
+
+    return render(request, 'add_new_chapter.html', {'form': form, 'manga': manga})
+
+
+
+def convert_manga_pdf(request,id):
     try:
+        manga_id, chapter_id = id.split('_')  # Assuming 'mangaId_chapterId' format
         manga = Manga.objects.get(pk=manga_id)
-        pdf_file_path =f'media/manga_files/{manga_id}.pdf'
-        output_folder = f'media/manga_images/{manga_id}'  
+        chapter = Chapter.objects.get(pk=chapter_id)
+
+        pdf_file_path =f'media/manga_files/{manga_id}/chapters/{chapter_id}.pdf'
+        output_folder = f'media/manga_images/{manga_id}/chapters/{chapter_id}'  
 
         os.makedirs(output_folder, exist_ok=True)
         print("hello")
@@ -64,14 +91,16 @@ def convert_manga_pdf(request, manga_id):
     return render(request, 'convert_result.html', {'Result': Result})
 
 
-def send_image(request,manga_id):
+def send_image(request, id):
     try:
+        manga_id, chapter_id = id.split('_')  # Assuming 'mangaId_chapterId' format
         manga = Manga.objects.get(pk=manga_id)
+        chapter = Chapter.objects.get(pk=chapter_id)  # Find the specific chapter
 
-        folder_dir = f'media/manga_images/{manga_id}/'
+        folder_dir = f'media/manga_images/{manga_id}/chapters/{chapter_id}/'  # Update the folder path
         image_files = [os.path.join(folder_dir, file) for file in os.listdir(folder_dir) if file.lower().endswith('.jpg')]
 
-        image_results = []  
+        image_results = []
 
         channel = ClarifaiChannel.get_grpc_channel()
         stub = service_pb2_grpc.V2Stub(channel)
@@ -95,8 +124,7 @@ def send_image(request,manga_id):
                                 )
                             )
                         )
-                        ]
-                    
+                    ]
                 ),
                 metadata=metadata
             )
@@ -107,7 +135,7 @@ def send_image(request,manga_id):
                 image_results.append({'image_file': image_file_location, 'predicted_concepts': predicted_concepts})
             else:
                 image_results.append({'image_file': image_file_location, 'error': f'Clarifai request failed: {post_model_outputs_response.status.description}'})
-        
+
         return JsonResponse({'analysis_results': image_results})
 
     except Exception as e:
@@ -115,9 +143,11 @@ def send_image(request,manga_id):
 
 
 
-def convert_images_to_base64(request, manga_id):
+def convert_images_to_base64(request, id):
+    manga_id, chapter_id = id.split('_')  # Assuming 'mangaId_chapterId' format
     manga = Manga.objects.get(pk=manga_id)
-    image_dir = f'media/manga_images/{manga_id}/'  # Replace with the actual directory path
+    chapter = Chapter.objects.get(pk=chapter_id)  # Find the specific chapter
+    image_dir = f'media/manga_images/{manga_id}/chapters/{chapter_id}/'  # Update the folder path
 
     base64_images = []  # Declare the list outside the loop
 
@@ -127,7 +157,7 @@ def convert_images_to_base64(request, manga_id):
                 base64_data = base64.b64encode(image_file.read()).decode('utf-8')
                 base64_images.append(base64_data)  # Append each base64 image data
 
-    manga.base64_images = ','.join(base64_images)  # Join the base64 images into a comma-separated string
-    manga.save()
-    
+    chapter.base64_images = ','.join(base64_images)  # Join the base64 images into a comma-separated string for the chapter
+    chapter.save()
+
     return JsonResponse({'message': 'Images converted to base64 and saved to the database'})

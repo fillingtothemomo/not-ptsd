@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add New Chapter</title>
+</head>
+<body>
+    <h1>Add New Chapter to {{ manga.title }}</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Add Chapter</button>
+    </form>
+</body>
+</html>
