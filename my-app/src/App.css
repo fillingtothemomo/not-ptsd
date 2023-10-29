@@ -12,7 +12,12 @@
     animation: App-logo-spin infinite 20s linear;
   }
 }
-
+h1{
+  color: red;
+  font-size: 50px;
+  text-align: center;
+  font-family: "Times New Roman", Times, serif;
+}
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
