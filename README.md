@@ -19,5 +19,5 @@ npm run dev
 
 ```
 
-###Hapi Hapi Hapi
-###you can now read your favorite mangas :)
+### Hapi Hapi Hapi
+### you can now read your favorite mangas :)
